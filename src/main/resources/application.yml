@@ -4,7 +4,7 @@ spring:
 
   datasource:
     url: jdbc:postgresql://localhost:5432/appointment_reminder
-    username: ${DB_USERNAME:yashg4824}
+    username: ${DB_USERNAME}
     password: ${DB_PASSWORD:}
     hikari:
       # One instance runs the REST API and the reminder worker in the same JVM, so the

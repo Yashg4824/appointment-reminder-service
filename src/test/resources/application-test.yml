@@ -9,7 +9,7 @@
 spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/appointment_reminder_test
-    username: ${DB_USERNAME:yashg4824}
+    username: ${DB_USERNAME}
     password: ${DB_PASSWORD:}
 
   jpa:

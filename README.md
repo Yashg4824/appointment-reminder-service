@@ -588,8 +588,8 @@ verified in milliseconds with no `Thread.sleep` and no dependence on the machine
 ./mvnw clean test
 ```
 
-The suite needs a running PostgreSQL and a database named `appointment_reminder_test` (see below). It does
-**not** need Docker.
+The suite needs a running PostgreSQL, a database named `appointment_reminder_test` (see below), and
+`DB_USERNAME` exported. It does **not** need Docker.
 
 ---
 
@@ -619,21 +619,26 @@ The schema is created automatically by Flyway on first start; `spring.jpa.hibern
 
 ```bash
 export DB_USERNAME=YOUR_DB_USERNAME
-export DB_PASSWORD=YOUR_DB_PASSWORD
+export DB_PASSWORD=YOUR_DB_PASSWORD   # may be empty for a local trust-auth setup
 ```
 
 These map to `spring.datasource.username` and `spring.datasource.password` in
-`src/main/resources/application.yml`, which reference `${DB_USERNAME:...}` and `${DB_PASSWORD:}`.
+`src/main/resources/application.yml`, which reference `${DB_USERNAME}` and `${DB_PASSWORD:}`.
 
-> **Portability note.** `application.yml` currently carries a developer-machine username as the default
-> value for `DB_USERNAME`. On any other machine, set `DB_USERNAME` explicitly. For a real deployment this
-> default should be removed so that the variable is required rather than silently defaulted.
+> **`DB_USERNAME` is required and has no default.** If it is not set, the application fails fast at
+> startup with an unresolved-placeholder error rather than silently connecting as some other user. The
+> same applies to the test suite, which reads `src/test/resources/application-test.yml`. `DB_PASSWORD`
+> defaults to empty, which is what a local `trust`-authentication PostgreSQL expects.
 
 ### Run
 
 ```bash
 # Point the build at a Java 11 JDK, e.g. on macOS:
 export JAVA_HOME=/path/to/your/java-11-jdk
+
+# Required - there is no default
+export DB_USERNAME=YOUR_DB_USERNAME
+export DB_PASSWORD=YOUR_DB_PASSWORD   # may be empty locally
 
 ./mvnw clean test          # build and run all 102 tests
 ./mvnw spring-boot:run     # start the service on http://localhost:8080
@@ -712,7 +717,8 @@ All settings live in `src/main/resources/application.yml`.
 | Property | Default | Purpose |
 |---|---|---|
 | `spring.datasource.url` | `jdbc:postgresql://localhost:5432/appointment_reminder` | Database location. |
-| `spring.datasource.username` / `.password` | from `DB_USERNAME` / `DB_PASSWORD` | Credentials, supplied by environment variable. |
+| `spring.datasource.username` | `${DB_USERNAME}` - **required, no default** | Database user. Startup fails fast if unset. |
+| `spring.datasource.password` | `${DB_PASSWORD:}` - defaults to empty | Database password. Empty suits local trust authentication. |
 | `spring.datasource.hikari.maximum-pool-size` | `10` | One instance serves both the API and the reminder worker from this pool. |
 | `spring.jpa.hibernate.ddl-auto` | `validate` | Flyway owns the schema; Hibernate only checks the entities match it. |
 | `spring.jpa.open-in-view` | `false` | No lazy loading outside a transaction. |
@@ -810,8 +816,8 @@ None of these are implemented; they are the next things I would build.
    wasting five attempts on an address that will never work.
 5. **Load testing.** Against production-like infrastructure, to replace the design argument in this section
    with measurements.
-6. **Production deployment configuration.** Removing the developer-machine default for `DB_USERNAME`,
-   externalised secrets, connection-pool tuning, and a read-only database user where appropriate.
+6. **Production deployment configuration.** Externalised secrets management, connection-pool tuning for
+   the real instance count, and a least-privilege database user.
 7. **Multi-channel delivery.** Adding a `channel` column and widening the unique constraint to
    `(appointment_id, reminder_type, channel)`, with a small sender registry to route between
    implementations.
