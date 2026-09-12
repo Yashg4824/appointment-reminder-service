@@ -1,0 +1,64 @@
+spring:
+  application:
+    name: appointment-reminder-service
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/appointment_reminder
+    username: ${DB_USERNAME:yashg4824}
+    password: ${DB_PASSWORD:}
+    hikari:
+      # One instance runs the REST API and the reminder worker in the same JVM, so the
+      # pool serves both. 10 is ample at this workload (architecture document, section 12).
+      maximum-pool-size: 10
+      pool-name: appointment-reminder-pool
+
+  jpa:
+    hibernate:
+      # Flyway owns the schema. Hibernate only verifies that the entities match it.
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          # Pin Hibernate to UTC so Instants are read and written without any
+          # server-local-time assumption (architecture document, section 7).
+          time_zone: UTC
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+  jackson:
+    serialization:
+      # ISO-8601 strings, not epoch numbers, so the API contract is unambiguous.
+      write-dates-as-timestamps: false
+
+server:
+  port: ${SERVER_PORT:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        # /actuator/health only. The architecture deliberately has no metrics stack.
+        include: health
+
+# Tuning knobs named in architecture document section 20. Everything the reminder
+# worker needs to know about timing lives here, not scattered through the code.
+reminder:
+  # How often each instance polls for due reminders.
+  poll-interval-ms: 10000
+  # Maximum rows claimed per cycle. This is the backpressure limit (doc section 11).
+  batch-size: 100
+  # How long a claimed row stays claimed before any worker may reclaim it.
+  processing-timeout: PT1M
+  # How long after a failed attempt before the reminder is eligible again.
+  retry-delay: PT5M
+  # Attempts before a reminder is marked FAILED.
+  max-attempts: 5
+  # A reminder whose due time passed less than this ago is still created and sent.
+  grace-period: PT15M
+
+logging:
+  level:
+    com.dealership.appointmentreminder: INFO

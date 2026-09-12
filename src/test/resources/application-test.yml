@@ -1,0 +1,44 @@
+# Integration tests run against a real local PostgreSQL database, NOT H2.
+#
+# This is a deliberate constraint from architecture document section 16: H2 does not
+# implement FOR UPDATE SKIP LOCKED, so the claim query and every concurrency test
+# would be testing behaviour that does not exist in production.
+#
+# Create the database once before running tests:
+#   createdb appointment_reminder_test
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/appointment_reminder_test
+    username: ${DB_USERNAME:yashg4824}
+    password: ${DB_PASSWORD:}
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    # Each test run starts from a known-empty schema.
+    clean-disabled: false
+
+reminder:
+  # One hour, so the @Scheduled worker effectively never fires during a test run. A fixedDelay
+  # schedule still runs once when the context starts, which is harmless because the database is
+  # empty at that point. Tests that need a worker cycle call ReminderWorker.runCycle() directly,
+  # which is deterministic and needs no waiting.
+  poll-interval-ms: 3600000
+  batch-size: 100
+  processing-timeout: PT1M
+  retry-delay: PT5M
+  max-attempts: 5
+  grace-period: PT15M
+
+logging:
+  level:
+    com.dealership.appointmentreminder: DEBUG
