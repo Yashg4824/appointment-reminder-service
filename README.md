@@ -118,12 +118,14 @@ src/
 │   ├── java/
 │   │   └── com/dealership/appointmentreminder/
 │   │       ├── AppointmentReminderApplication.java
-│   │       ├── appointment/        REST + business logic + persistence for appointments
-│   │       │   └── dto/            request and response objects
-│   │       ├── reminder/           reminder entity, scheduling, claiming, processing, worker
-│   │       ├── notification/       NotificationSender abstraction + logging stub
 │   │       ├── config/             Clock bean, scheduling, typed properties
-│   │       └── web/                API error body and exception handler
+│   │       ├── controller/         REST endpoints
+│   │       ├── dto/                request/response bodies and the notification payload
+│   │       ├── entity/             JPA entities and their status/type enums
+│   │       ├── exception/          domain exceptions and the API exception handler
+│   │       ├── repository/         Spring Data repositories, incl. the claim/reclaim SQL
+│   │       ├── scheduler/          the @Scheduled reminder worker
+│   │       └── service/            business logic and notification delivery
 │   └── resources/
 │       ├── application.yml
 │       └── db/migration/           V1__create_appointments_and_reminders.sql
@@ -133,16 +135,22 @@ src/
         └── application-test.yml
 ```
 
-Packages are grouped **by feature**, not by layer.
+Packages are grouped **by layer**, the conventional Spring Boot arrangement, so a reader can find
+any class from its role alone.
 
 | Package | Responsibility |
 |---|---|
-| `appointment` | `AppointmentController` (HTTP only), `AppointmentService` (business logic and the transaction boundary), `Appointment` entity, `AppointmentRepository`, three domain exceptions. |
-| `appointment.dto` | `CreateAppointmentRequest`, `RescheduleAppointmentRequest`, `AppointmentResponse`, `ReminderResponse`. The request types use `OffsetDateTime`, which is how the API's time-zone contract is enforced. |
-| `reminder` | `Reminder` entity, `ReminderType` and `ReminderStatus` enums, `ReminderRepository` (the claim and reclaim SQL), `ReminderScheduleCalculator` (timing rules), `ReminderClaimService` (the claim transaction), `ReminderProcessor` (one reminder's outcome), `ReminderWorker` (the scheduled trigger). |
-| `notification` | `NotificationSender` interface, `Notification` value object, `LoggingNotificationSender` stub. |
 | `config` | `ClockConfig` (injectable `Clock`), `SchedulingConfig` (`@EnableScheduling`), `ReminderProperties` (typed `reminder.*` settings), `PropertiesConfig`. |
-| `web` | `ApiError` and `ApiExceptionHandler`. |
+| `controller` | `AppointmentController` — HTTP only: request binding, validation triggering, status-code mapping. No business logic. |
+| `dto` | `CreateAppointmentRequest`, `RescheduleAppointmentRequest`, `AppointmentResponse`, `ReminderResponse`, `ApiError`, and the `Notification` value object passed to the sender. The request types use `OffsetDateTime`, which is how the API's time-zone contract is enforced. |
+| `entity` | `Appointment` and `Reminder` JPA entities, plus the `AppointmentStatus`, `ReminderStatus` and `ReminderType` enums. `ReminderType` carries each reminder's offset, which is the Open/Closed mechanism. |
+| `exception` | `AppointmentNotFoundException`, `InvalidAppointmentRequestException`, `InvalidAppointmentStateException`, and `ApiExceptionHandler` which maps them to HTTP statuses. |
+| `repository` | `AppointmentRepository` (including the row-locking `findByIdForUpdate`) and `ReminderRepository` (the `FOR UPDATE SKIP LOCKED` claim and the stale-work reclaim). |
+| `scheduler` | `ReminderWorker` — the `@Scheduled` trigger. Orchestration only: reclaim, claim, process. |
+| `service` | `AppointmentService` (business logic and the transaction boundary), `ReminderScheduleCalculator` (timing rules), `ReminderClaimService` (the claim transaction), `ReminderProcessor` (one reminder's outcome), plus the `NotificationSender` interface and its `LoggingNotificationSender` stub. |
+
+Test packages mirror this layout, with an extra `integration` package for the two suites that
+deliberately span every layer, and `support` for shared test fixtures.
 
 ---
 

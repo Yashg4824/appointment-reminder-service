@@ -6,8 +6,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import com.dealership.appointmentreminder.notification.Notification;
-import com.dealership.appointmentreminder.notification.NotificationSender;
+import com.dealership.appointmentreminder.dto.Notification;
+import com.dealership.appointmentreminder.service.NotificationSender;
 
 /**
  * A notification sender that records what it was asked to deliver, and can be told to fail.

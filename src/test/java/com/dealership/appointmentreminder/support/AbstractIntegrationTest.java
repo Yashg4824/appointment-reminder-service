@@ -9,13 +9,13 @@ import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 
-import com.dealership.appointmentreminder.appointment.Appointment;
-import com.dealership.appointmentreminder.appointment.AppointmentRepository;
-import com.dealership.appointmentreminder.appointment.AppointmentStatus;
-import com.dealership.appointmentreminder.reminder.Reminder;
-import com.dealership.appointmentreminder.reminder.ReminderRepository;
-import com.dealership.appointmentreminder.reminder.ReminderStatus;
-import com.dealership.appointmentreminder.reminder.ReminderType;
+import com.dealership.appointmentreminder.entity.Appointment;
+import com.dealership.appointmentreminder.entity.AppointmentStatus;
+import com.dealership.appointmentreminder.entity.Reminder;
+import com.dealership.appointmentreminder.entity.ReminderStatus;
+import com.dealership.appointmentreminder.entity.ReminderType;
+import com.dealership.appointmentreminder.repository.AppointmentRepository;
+import com.dealership.appointmentreminder.repository.ReminderRepository;
 
 /**
  * Base class for tests that need the real PostgreSQL database.
